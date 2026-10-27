@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+openai>=1.0
+numpy
+scikit-learn
+pytest
+httpx
