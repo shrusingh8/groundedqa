@@ -47,7 +47,7 @@ Downloaded papers stay out of git (see `.gitignore`); their PMC IDs are the file
 ## Run
 
 ```bash
-pip install -r requirements.txt
+pip install -r requirements.txt && pip install -e .
 python -m pytest                                   # 10 tests, no network or key needed
 
 export OPENAI_API_KEY=...                          # never commit keys
