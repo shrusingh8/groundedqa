@@ -34,15 +34,21 @@ Splitting retrieval from generation shows *where* a failure happens, which is wh
 
 ### Results
 
-_Not yet populated._ Add 10 to 20 open-access papers to `data/docs/` (for example from PubMed Central),
-write 30 to 50 cases in `data/eval_cases.json`, run the command below, and paste the table here with a
-short note on the failures you found. The `toy` example cases use a fictional corpus and only demonstrate the format.
+_Not yet populated._ Download 15 to 20 CC BY papers from PubMed Central, write 30 to 50 cases in
+`data/eval_cases.json`, run the evals, and paste the table here with a short note on the failures found.
+The `toy` example cases use a fictional corpus and only demonstrate the format.
+
+```bash
+python -m groundedqa.fetch_pmc '"large language model"[Title] AND (clinical OR medical)[Title]' --n 20
+```
+
+Downloaded papers stay out of git (see `.gitignore`); their PMC IDs are the file names, so the corpus is reproducible.
 
 ## Run
 
 ```bash
 pip install -r requirements.txt
-python -m pytest                                   # 8 tests, no network or key needed
+python -m pytest                                   # 10 tests, no network or key needed
 
 export OPENAI_API_KEY=...                          # never commit keys
 python -m groundedqa.evals --docs data/docs --cases data/eval_cases.json
