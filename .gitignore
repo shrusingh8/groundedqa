@@ -3,3 +3,4 @@ __pycache__/
 .env
 data/docs/*.txt
 *.egg-info/
+.ipynb_checkpoints/
