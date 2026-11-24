@@ -2,7 +2,7 @@ from fastapi.testclient import TestClient
 
 from groundedqa.answer import NOT_FOUND, Pipeline
 from groundedqa.api import create_app
-from groundedqa.evals import run_evals
+from groundedqa.evals import retrieval_hit_rate, run_evals
 from groundedqa.retrieval import Chunk, Index, chunk_text, tfidf_embed
 
 # toy, clearly fictional corpus: only here to exercise the code
@@ -57,6 +57,18 @@ def test_run_evals_rates():
     assert r["false_refusal_rate"] == 0.5
     assert r["answer_support_rate"] == 1.0
     assert r["correct_refusal_rate"] == 1.0
+
+
+def test_records_and_keyless_retrieval_rate():
+    cases = [
+        {"question": "what breaks down quillium", "answerable": True, "gold_phrase": "zorvex"},
+        {"question": "who won the 1998 world cup", "answerable": False},
+    ]
+    rows = []
+    run_evals(make_pipe(NOT_FOUND), cases, judge=lambda _m: "yes", records=rows)
+    assert [r["refused"] for r in rows] == [True, True] and rows[0]["retrieval_hit"] and rows[0]["supported"] is None
+    idx = Index(CHUNKS, tfidf_embed([c.text for c in CHUNKS]))
+    assert retrieval_hit_rate(idx, cases, k=1) == 1.0
 
 
 def test_unsupported_answer_is_caught_by_judge():

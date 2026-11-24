@@ -34,21 +34,51 @@ Splitting retrieval from generation shows *where* a failure happens, which is wh
 
 ### Results
 
-_Not yet populated._ Download 15 to 20 CC BY papers from PubMed Central, write 30 to 50 cases in
-`data/eval_cases.json`, run the evals, and paste the table here with a short note on the failures found.
-The `toy` example cases use a fictional corpus and only demonstrate the format.
+**Corpus:** 20 CC BY papers from PubMed Central on clinical uses of LLMs (fetched Nov 2026, ~114K words,
+1,272 chunks of 120 words). **Cases:** `data/pmc_cases.json`, 50 hand-written questions: 40 answerable
+(2 per paper, each gold phrase verified verbatim in its paper) and 10 unanswerable. Several unanswerable
+questions are near misses on purpose, e.g. asking for a Net Promoter Score for the wrong study, so a
+system that matches keywords without reading will answer them.
+
+**Retrieval (keyless TF-IDF baseline):**
+
+| Chunk size | Hit rate @1 | @4 (default) | @8 | Right paper in top 4 |
+|---|---|---|---|---|
+| 120 words | 47.5% | **80.0%** | 87.5% | 100% |
+| 60 words | 40.0% | 75.0% | 90.0% | 100% |
+| 40 words | 30.0% | 65.0% | 82.5% | 100% |
+
+What the failures show:
+
+- **Every miss found the right paper but the wrong passage.** All 8 misses at k=4 are numeric facts
+  (an MAE of 0.825, "1573 sessions", "4321" training records). The question's keywords appear in many
+  passages of the same paper, and the one passage holding the number does not stand out.
+- **Smaller chunks made it worse, not better.** Cutting chunks to 40 words dropped the hit rate from 80% to
+  65%, because a short chunk with the number loses the surrounding words the query matches on.
+- **Next fix:** rerank the top 8 to 10 passages (cross-encoder or LLM) instead of shrinking chunks,
+  since k=8 already reaches 87.5%.
+
+**Semantic embeddings and generation** (`text-embedding-3-small` + `gpt-4o-mini`): run with an OpenAI key.
+
+```bash
+python -m groundedqa.evals --docs data/docs --cases data/pmc_cases.json --out results.json
+```
+
+That prints the four metrics above and writes every answer, refusal, and retrieved passage to
+`results.json` for failure review.
+
+Reproduce the corpus (downloaded papers stay out of git; each case's `doc` field is its PMC ID):
 
 ```bash
 python -m groundedqa.fetch_pmc '"large language model"[Title] AND (clinical OR medical)[Title]' --n 20
+python -m groundedqa.evals --docs data/docs --cases data/pmc_cases.json --embed tfidf --retrieval-only
 ```
-
-Downloaded papers stay out of git (see `.gitignore`); their PMC IDs are the file names, so the corpus is reproducible.
 
 ## Run
 
 ```bash
 pip install -r requirements.txt && pip install -e .
-python -m pytest                                   # 10 tests, no network or key needed
+python -m pytest                                   # 11 tests, no network or key needed
 
 export OPENAI_API_KEY=...                          # never commit keys
 python -m groundedqa.evals --docs data/docs --cases data/eval_cases.json
